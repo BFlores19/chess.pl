@@ -358,8 +358,59 @@ report_move(Color, Board, From_File-From_Rank, To_File-To_Rank, Rating) :-
 % YOUR CODE STARTS HERE
 
 % TASK 1: REPLACE THE print_board PREDICATE BELOW WITH YOUR CODE
-print_board(Board) :-
-    write(Board), nl.
+
+% Print a horizontal border
+print_border :- 
+    write('  +----+----+----+----+----+----+----+----+'), nl.
+
+% Get the piece at a given coordinate
+get_piece_at(Board, File-Row, Symbol) :-
+    member(piece(File-Row, Color, Type), Board),
+    piece_symbol(Color, Type, Symbol), !.
+get_piece_at(_, _, '    ').  
+
+% Define symbols for pieces
+piece_symbol(white, king, ' k  ').
+piece_symbol(white, queen, ' q  ').
+piece_symbol(white, rook, ' r  ').
+piece_symbol(white, bishop, ' b  ').
+piece_symbol(white, night, ' n  ').
+piece_symbol(white, pawn, ' p  ').
+piece_symbol(black, king, '*k  ').
+piece_symbol(black, queen, '*q  ').
+piece_symbol(black, rook, '*r  ').
+piece_symbol(black, bishop, '*b  ').
+piece_symbol(black, night, '*n  ').
+piece_symbol(black, pawn, '*p  ').
+
+% Print a single row with pieces
+print_row(_, 0, _) :- print_border.  % Base case: stop at row 0
+print_row(Board, N, Files) :-
+    print_border,
+    write(N), write(' |'),
+    print_row_cells(Board, N, Files),
+    nl,
+    N1 is N - 1,
+    print_row(Board, N1, Files).
+
+% Print the cells for a given row
+print_row_cells(_, _, []) :- write(' '). % End row
+print_row_cells(Board, Row, [File | Rest]) :-
+    get_piece_at(Board, File-Row, Symbol),
+    write(Symbol), write('|'),
+    print_row_cells(Board, Row, Rest).
+
+% Print column labels
+print_labels :- 
+    write('    a    b    c    d    e    f    g    h'), nl.
+
+% Print the whole board
+print_board(Board) :- 
+    Files = [a, b, c, d, e, f, g, h], 
+    print_row(Board, 8, Files),  % Start at row 8
+    print_labels.
+
+
 
 % ------------------------------------------------------------------------------
 % YOUR CODE ENDS HERE
