@@ -58,10 +58,17 @@ main.
 
 % TASK 3: MODIFY THE CODE BELOW TO MAKE playerA and playerB auto-compete.
 play(Board) :-
-    get_command(Command),
-    execute_command(Command, Board, NewBoard),
-    execute_command(playerB, NewBoard, NextNewBoard),
-    play(NextNewBoard).
+    player(playerA, white),
+    select_move(playerA, Board, FromA, ToA, RatingA),  % PlayerA chooses a move
+    make_move(Board, FromA, ToA, NewBoard),  % Apply PlayerA’s move
+    report_move(white, NewBoard, FromA, ToA, RatingA),  % Print move
+    
+    player(playerB, black),
+    select_move(playerB, NewBoard, FromB, ToB, RatingB),  % PlayerB chooses a move
+    make_move(NewBoard, FromB, ToB, NextBoard),  % Apply PlayerB’s move
+    report_move(black, NextBoard, FromB, ToB, RatingB),  % Print move
+    
+    play(NextBoard).  % Continue the game loop
 
 get_command(Command) :-
     nl, write('white move -> '),
@@ -98,6 +105,71 @@ Rand is Number.               % Add random value to avoid deadlock
 % +++++++++++++++++++++++++++++++++ playerA Code +++++++++++++++++++++++++++++++
 
 % TASK 2: IMPLEMENT playerA CODE HERE
+
+strengthA([state(_, _, _, _)|Board], Color, OppositeColor, Strength) :-    % Skipping board state to evaluate the pieces ONLY
+    strengthA(Board, Color, OppositeColor, Strength), !.
+
+strengthA([piece(_, Color, Type)|Board], Color, OppositeColor, Strength) :-		% Calculate the strength of the pieces that white has on the board(playerA)
+    valueA(Type, Value),
+    strengthA(Board, Color, OppositeColor, PartialStrength),
+    Strength is PartialStrength + Value, !.
+
+strengthA([piece(_, OppositeColor, Type)|Board], Color, OppositeColor,	
+      Strength) :-			% Calculate the strength of the pieces that black has on the board(playerB) 
+    valueA(Type, Value),
+    strengthA(Board, Color, OppositeColor, PartialStrength),
+    Strength is PartialStrength - Value.		% Subtract the value of the black pieces from the total strength to calculate StrengthA
+
+ply_depthA(3).          % Depth of alpha-beta search
+
+% Value system for pieces for playerA
+valueA(king, 10000) :- ! .
+valueA(queen,  900) :- ! .
+valueA(rook,   500) :- ! .
+valueA(night,  300) :- ! .
+valueA(bishop, 300) :- ! .
+valueA(pawn,   100) :- ! .
+
+
+% PlayerA book moves, white
+bookA( [
+    state(white, WhiteKing, WhiteKingRook, WhiteQueenRook),
+    state(black, BlackKing, BlackKingRook, BlackQueenRook),		% Describing the initial board state of any chess since 
+    piece(a-8, black, rook  ), piece(b-8, black, night ),		% this will be the first move in every game
+    piece(c-8, black, bishop), piece(d-8, black, queen ),
+    piece(e-8, black, king  ), piece(f-8, black, bishop),
+    piece(g-8, black, night ), piece(h-8, black, rook  ),
+    piece(a-7, black, pawn  ), piece(b-7, black, pawn  ),
+    piece(c-7, black, pawn  ), piece(d-7, black, pawn  ),
+    piece(e-7, black, pawn  ), piece(f-7, black, pawn  ),
+    piece(g-7, black, pawn  ), piece(h-7, black, pawn  ),
+    piece(a-1, white, rook  ), piece(b-1, white, night ),
+    piece(c-1, white, bishop), piece(d-1, white, queen ),
+    piece(e-1, white, king  ), piece(f-1, white, bishop),
+    piece(g-1, white, night ), piece(h-1, white, rook  ),
+    piece(a-2, white, pawn  ), piece(b-2, white, pawn  ),
+    piece(c-2, white, pawn  ), piece(d-2, white, pawn  ),
+    piece(e-2, white, pawn  ), piece(f-2, white, pawn  ),
+    piece(g-2, white, pawn  ), piece(h-2, white, pawn  )
+], e-2, e-4).  % First move playerA makes every game is e2e4.
+
+% Code for alpha beta prunning for PLayerA (White)
+sufficientA(Player, Board, Turn, [], Depth, Alpha, Beta, Move, Val, Move, Val) :- !.
+sufficientA(Player, Board, Turn, Moves, Depth, Alpha, Beta, Move, Val, Move, Val) :-
+    Player \== Turn,        % Blacks turn to play
+    Val < Alpha, !.         % Pruning the branch since it is not useful
+sufficientA(Player, Board, Turn, Moves, Depth, Alpha, Beta, Move, Val, Move, Val) :-
+    Player = Turn,          % Whites turn to play
+    Val > Beta, !.          % Pruning the branch since it is not useful
+sufficientA(Player, Board, Turn, Moves, Depth, Alpha, Beta, Move, Val,
+    BestMove, BestVal) :-
+    new_bounds(Player, Turn, Alpha, Beta, Val, NewAlpha, NewBeta),
+    find_best(Player, Board, Turn, Moves, Depth, NewAlpha, NewBeta, Move1, Val1),
+    better_of(Player, Turn, Move, Val, Move1, Val1, BestMove, BestVal).
+
+collect_movesA(Board, Color, Moves) :-
+    bagof(move(From, To), Piece^move(Board, From, To, Color, Piece), Moves).
+
 
 % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 % ------------------------------------------------------------------------------
